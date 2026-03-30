@@ -9,7 +9,15 @@
     "build:backend": "npx tsc --project tsconfig.build.json",
     "start": "node dist/server.js",
     "start:frontend": "next start -p 3002",
-  "keywords": [
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "test": "jest --passWithNoTests",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:ci": "jest --coverage --ci --color --verbose",
+    "dev:frontend": "next dev -p 3000",
+    "build:frontend": "next build"
+  },
     "ecommerce",
     "fashion",
     "momo",
