@@ -2,7 +2,6 @@
 const nextConfig = {
   reactStrictMode: true,
   typescript: {
-    // Ignore TypeScript errors during production build
     ignoreBuildErrors: true,
   },
   images: {
@@ -15,17 +14,13 @@ const nextConfig = {
     domains: ['localhost'],
   },
   async rewrites() {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    // Hardcoded Railway backend URL
     return [
       {
         source: '/api/:path*',
-        destination: `${apiUrl}/api/:path*`,
+        destination: 'https://fashion-shop-production-69c7.up.railway.app/api/:path*',
       },
     ];
-  },
-  env: {
-    CUSTOM_KEY: process.env.CUSTOM_KEY,
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
   },
 };
 
