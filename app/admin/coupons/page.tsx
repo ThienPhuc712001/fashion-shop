@@ -1,142 +1,142 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Spinner, ErrorDisplay } from '@/components/ui/spinner';
-import { Coupon } from '@/lib/api';
-import { formatPrice } from '@/lib/utils';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 import api from '@/lib/api';
-import { toast } from 'sonner';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
-export default function AdminCouponsPage() {
-  const router = useRouter();
+interface Coupon {
+  id: string;
+  code: string;
+  name?: string;
+  description?: string;
+  discount_type: 'percentage' | 'fixed';
+  discount_value: number;
+  min_order_amount: number;
+  usage_limit?: number;
+  used_count: number;
+  is_active: number;
+  valid_from: string;
+  valid_until?: string;
+  created_at: string;
+}
+
+export default function CouponsPage() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
     fetchCoupons();
-  }, [router]);
+  }, []);
 
   const fetchCoupons = async () => {
-    setLoading(true);
-    setError(null);
     try {
-      const res = await api.get<Coupon[]>('/coupons');
-      setCoupons(res.data);
+      const response = await api.get('/coupons');
+      setCoupons(response.data.data);
     } catch (err: any) {
       if (err.response?.status === 401) {
-        localStorage.removeItem('token');
         router.push('/login');
-      } else {
-        setError(err.response?.data?.message || 'Không thể tải mã giảm giá');
+        return;
       }
+      setError(err.response?.data?.message || 'Không thể tải danh sách mã giảm giá');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (couponId: string) => {
-    if (!confirm('Xóa mã giảm giá này?')) return;
-    try {
-      await api.delete(`/coupons/${couponId}`);
-      toast.success('Đã xóa mã giảm giá');
-      fetchCoupons();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Xóa thất bại');
-    }
-  };
-
-  const getTypeLabel = (type: string) => {
-    return type === 'percentage' ? 'Phần trăm' : 'Cố định';
-  };
-
   if (loading) {
     return (
-      <div className="min-h-[400px] flex items-center justify-center">
-        <Spinner size="lg" />
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        </div>
       </div>
     );
   }
 
   if (error) {
-    return <ErrorDisplay message={error} onRetry={fetchCoupons} />;
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center py-12">
+          <p className="text-destructive mb-4">{error}</p>
+          <Button onClick={fetchCoupons}>Thử lại</Button>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Mã giảm giá</h1>
-        <Button onClick={() => router.push('/admin/coupons/new')}>
-          <Plus className="h-4 w-4 mr-2" />
-          Thêm mã giảm giá
-        </Button>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Mã giảm giá</h1>
+          <p className="text-muted-foreground">Quản lý mã khuyến mãi và giảm giá</p>
+        </div>
+        <Button>Thêm mã giảm giá</Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Tất cả mã giảm giá ({coupons.length})</CardTitle>
+          <CardTitle>Tất cả mã giảm giá</CardTitle>
+          <CardDescription>{coupons.length} mã</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Mã</TableHead>
+                <TableHead>Tên</TableHead>
                 <TableHead>Loại</TableHead>
                 <TableHead>Giá trị</TableHead>
                 <TableHead>Đơn tối thiểu</TableHead>
-                <TableHead>Giới hạn sử dụng</TableHead>
                 <TableHead>Đã dùng</TableHead>
+                <TableHead>Trạng thái</TableHead>
                 <TableHead>Hết hạn</TableHead>
-                <TableHead className="text-right">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {coupons.map((coupon) => (
-                <TableRow key={coupon.id}>
-                  <TableCell className="font-medium">{coupon.code}</TableCell>
-                  <TableCell>{getTypeLabel(coupon.type)}</TableCell>
-                  <TableCell>
-                    {coupon.type === 'percentage' ? `${coupon.value}%` : formatPrice(coupon.value)}
-                  </TableCell>
-                  <TableCell>{coupon.minPurchase ? formatPrice(coupon.minPurchase) : '-'}</TableCell>
-                  <TableCell>{coupon.usageLimit || 'Không giới hạn'}</TableCell>
-                  <TableCell>{coupon.usedCount} / {coupon.usageLimit || '∞'}</TableCell>
-                  <TableCell>{new Date(coupon.expiresAt).toLocaleDateString('vi-VN')}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" size="icon" onClick={() => router.push(`/admin/coupons/${coupon.id}/edit`)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="icon" onClick={() => handleDelete(coupon.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {coupons.length === 0 && (
+              {coupons.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8">
-                    Chưa có mã giảm giá nào
+                    Không có mã giảm giá nào
                   </TableCell>
                 </TableRow>
+              ) : (
+                coupons.map((coupon) => (
+                  <TableRow key={coupon.id}>
+                    <TableCell className="font-mono font-bold">{coupon.code}</TableCell>
+                    <TableCell>{coupon.name || '-'}</TableCell>
+                    <TableCell>
+                      <Badge variant={coupon.discount_type === 'percentage' ? 'default' : 'secondary'}>
+                        {coupon.discount_type === 'percentage' ? `${coupon.discount_value}%` : `${coupon.discount_value}₫`}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {coupon.discount_type === 'percentage'
+                        ? `${coupon.discount_value}%`
+                        : `${coupon.discount_value.toLocaleString('vi-VN')}₫`}
+                    </TableCell>
+                    <TableCell>{coupon.min_order_amount.toLocaleString('vi-VN')}₫</TableCell>
+                    <TableCell>
+                      {coupon.usage_limit
+                        ? `${coupon.used_count}/${coupon.usage_limit}`
+                        : coupon.used_count}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={coupon.is_active ? 'default' : 'secondary'}>
+                        {coupon.is_active ? 'Hoạt động' : 'Vô hiệu'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {new Date(coupon.valid_until || coupon.valid_from).toLocaleDateString('vi-VN')}
+                    </TableCell>
+                  </TableRow>
+                ))
               )}
             </TableBody>
           </Table>

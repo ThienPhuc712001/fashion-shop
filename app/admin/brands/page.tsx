@@ -1,92 +1,83 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Spinner, ErrorDisplay } from '@/components/ui/spinner';
-import { Brand } from '@/lib/api';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 import api from '@/lib/api';
-import { toast } from 'sonner';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
-export default function AdminBrandsPage() {
-  const router = useRouter();
+interface Brand {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  logo_url?: string;
+  is_active: number;
+  created_at: string;
+}
+
+export default function BrandsPage() {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
     fetchBrands();
-  }, [router]);
+  }, []);
 
   const fetchBrands = async () => {
-    setLoading(true);
-    setError(null);
     try {
-      const res = await api.get<Brand[]>('/brands');
-      setBrands(res.data);
+      const response = await api.get('/brands');
+      setBrands(response.data.data);
     } catch (err: any) {
       if (err.response?.status === 401) {
-        localStorage.removeItem('token');
         router.push('/login');
-      } else {
-        setError(err.response?.data?.message || 'Không thể tải thương hiệu');
+        return;
       }
+      setError(err.response?.data?.message || 'Không thể tải danh sách thương hiệu');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (brandId: string) => {
-    if (!confirm('Xóa thương hiệu này?')) return;
-    try {
-      await api.delete(`/brands/${brandId}`);
-      toast.success('Đã xóa thương hiệu');
-      fetchBrands();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Xóa thất bại');
-    }
-  };
-
   if (loading) {
     return (
-      <div className="min-h-[400px] flex items-center justify-center">
-        <Spinner size="lg" />
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        </div>
       </div>
     );
   }
 
   if (error) {
-    return <ErrorDisplay message={error} onRetry={fetchBrands} />;
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center py-12">
+          <p className="text-destructive mb-4">{error}</p>
+          <Button onClick={fetchBrands}>Thử lại</Button>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Thương hiệu</h1>
-        <Button onClick={() => router.push('/admin/brands/new')}>
-          <Plus className="h-4 w-4 mr-2" />
-          Thêm thương hiệu
-        </Button>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Thương hiệu</h1>
+          <p className="text-muted-foreground">Quản lý thương hiệu sản phẩm</p>
+        </div>
+        <Button>Thêm thương hiệu</Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Tất cả thương hiệu ({brands.length})</CardTitle>
+          <CardTitle>Tất cả thương hiệu</CardTitle>
+          <CardDescription>{brands.length} thương hiệu</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -95,34 +86,32 @@ export default function AdminBrandsPage() {
                 <TableHead>Tên</TableHead>
                 <TableHead>Slug</TableHead>
                 <TableHead>Mô tả</TableHead>
-                <TableHead className="text-right">Thao tác</TableHead>
+                <TableHead>Logo</TableHead>
+                <TableHead>Trạng thái</TableHead>
+                <TableHead>Ngày tạo</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {brands.map((brand) => (
                 <TableRow key={brand.id}>
                   <TableCell className="font-medium">{brand.name}</TableCell>
-                  <TableCell>{brand.slug}</TableCell>
+                  <TableCell className="text-muted-foreground">{brand.slug}</TableCell>
                   <TableCell>{brand.description || '-'}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" size="icon" onClick={() => router.push(`/admin/brands/${brand.id}/edit`)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="icon" onClick={() => handleDelete(brand.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                  <TableCell>
+                    {brand.logo_url ? (
+                      <img src={brand.logo_url} alt={brand.name} className="h-8 w-8 object-contain" />
+                    ) : (
+                      '-'
+                    )}
                   </TableCell>
+                  <TableCell>
+                    <Badge variant={brand.is_active ? 'default' : 'secondary'}>
+                      {brand.is_active ? 'Active' : 'Inactive'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{new Date(brand.created_at).toLocaleDateString('vi-VN')}</TableCell>
                 </TableRow>
               ))}
-              {brands.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8">
-                    Chưa có thương hiệu nào
-                  </TableCell>
-                </TableRow>
-              )}
             </TableBody>
           </Table>
         </CardContent>

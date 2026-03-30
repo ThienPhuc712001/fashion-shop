@@ -1,92 +1,83 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Spinner, ErrorDisplay } from '@/components/ui/spinner';
-import { Category } from '@/lib/api';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 import api from '@/lib/api';
-import { toast } from 'sonner';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
-export default function AdminCategoriesPage() {
-  const router = useRouter();
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  parent_id?: string;
+  is_active: number;
+  created_at: string;
+}
+
+export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
     fetchCategories();
-  }, [router]);
+  }, []);
 
   const fetchCategories = async () => {
-    setLoading(true);
-    setError(null);
     try {
-      const res = await api.get<Category[]>('/categories');
-      setCategories(res.data);
+      const response = await api.get('/categories');
+      setCategories(response.data.data);
     } catch (err: any) {
       if (err.response?.status === 401) {
-        localStorage.removeItem('token');
         router.push('/login');
-      } else {
-        setError(err.response?.data?.message || 'Không thể tải danh mục');
+        return;
       }
+      setError(err.response?.data?.message || 'Không thể tải danh sách danh mục');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (categoryId: string) => {
-    if (!confirm('Xóa danh mục này?')) return;
-    try {
-      await api.delete(`/categories/${categoryId}`);
-      toast.success('Đã xóa danh mục');
-      fetchCategories();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Xóa thất bại');
-    }
-  };
-
   if (loading) {
     return (
-      <div className="min-h-[400px] flex items-center justify-center">
-        <Spinner size="lg" />
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        </div>
       </div>
     );
   }
 
   if (error) {
-    return <ErrorDisplay message={error} onRetry={fetchCategories} />;
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center py-12">
+          <p className="text-destructive mb-4">{error}</p>
+          <Button onClick={fetchCategories}>Thử lại</Button>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Danh mục</h1>
-        <Button onClick={() => router.push('/admin/categories/new')}>
-          <Plus className="h-4 w-4 mr-2" />
-          Thêm danh mục
-        </Button>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Danh mục</h1>
+          <p className="text-muted-foreground">Quản lý danh mục sản phẩm</p>
+        </div>
+        <Button>Thêm danh mục</Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Tất cả danh mục ({categories.length})</CardTitle>
+          <CardTitle>Tất cả danh mục</CardTitle>
+          <CardDescription>{categories.length} danh mục</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -95,36 +86,26 @@ export default function AdminCategoriesPage() {
                 <TableHead>Tên</TableHead>
                 <TableHead>Slug</TableHead>
                 <TableHead>Mô tả</TableHead>
-                <TableHead>Sắp xếp</TableHead>
-                <TableHead className="text-right">Thao tác</TableHead>
+                <TableHead>Parent</TableHead>
+                <TableHead>Trạng thái</TableHead>
+                <TableHead>Ngày tạo</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {categories.map((cat) => (
                 <TableRow key={cat.id}>
                   <TableCell className="font-medium">{cat.name}</TableCell>
-                  <TableCell>{cat.slug}</TableCell>
+                  <TableCell className="text-muted-foreground">{cat.slug}</TableCell>
                   <TableCell>{cat.description || '-'}</TableCell>
-                  <TableCell>{cat.sort_order}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" size="icon" onClick={() => router.push(`/admin/categories/${cat.id}/edit`)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="icon" onClick={() => handleDelete(cat.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                  <TableCell>{cat.parent_id ? '...' : '-'}</TableCell>
+                  <TableCell>
+                    <Badge variant={cat.is_active ? 'default' : 'secondary'}>
+                      {cat.is_active ? 'Active' : 'Inactive'}
+                    </Badge>
                   </TableCell>
+                  <TableCell>{new Date(cat.created_at).toLocaleDateString('vi-VN')}</TableCell>
                 </TableRow>
               ))}
-              {categories.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
-                    Chưa có danh mục nào
-                  </TableCell>
-                </TableRow>
-              )}
             </TableBody>
           </Table>
         </CardContent>
