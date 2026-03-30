@@ -18,6 +18,7 @@
     "dev:frontend": "next dev -p 3000",
     "build:frontend": "next build"
   },
+  "keywords": [
     "ecommerce",
     "fashion",
     "momo",
