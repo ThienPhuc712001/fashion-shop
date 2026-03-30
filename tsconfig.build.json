@@ -4,10 +4,11 @@
     "noEmit": false,
     "noEmitOnError": false,
     "outDir": "./dist",
+    "rootDir": "./src",
     "module": "commonjs",
     "moduleResolution": "node",
     "jsx": "react-jsx"
   },
-  "include": ["src/**/*.ts", "src/**/*.js", "seed.ts"],
+  "include": ["src/**/*.ts", "src/**/*.js"],
   "exclude": ["node_modules", "tests", "**/*.test.ts", "**/*.spec.ts"]
 }

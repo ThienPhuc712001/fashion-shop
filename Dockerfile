@@ -30,4 +30,4 @@ EXPOSE 3000
 ENV NODE_ENV=production
 ENV DB_PATH=./data/fashion_shop.db
 
-CMD ["node", "dist/src/server.js"]
+CMD ["node", "dist/server.js"]

@@ -2,11 +2,11 @@
   "name": "fashion-shop",
   "version": "1.0.0",
   "description": "Fashion E-commerce Platform with Momo/VNPay",
-  "main": "dist/src/server.js",
+  "main": "dist/server.js",
   "scripts": {
     "dev": "nodemon --exec ts-node src/server.ts",
     "build": "npx tsc --project tsconfig.build.json",
-    "start": "node dist/src/server.js",
+    "start": "node dist/server.js",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "test": "jest --passWithNoTests",

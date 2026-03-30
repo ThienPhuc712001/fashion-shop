@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { seedDatabase } from '../../seed';
+import { seedDatabase } from '../seed';
 
 const router = Router();
 
