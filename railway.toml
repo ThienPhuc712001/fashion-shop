@@ -1,0 +1,28 @@
+[build]
+  builder = "nixpacks"
+  buildCommand = "npm ci && npm run build"
+
+[deploy]
+  startCommand = "node dist/server.js"
+  healthcheckPath = "/health"
+  healthcheckTimeout = 100
+  restartPolicy = {
+    type = "on-failure",
+    maxAttempts = 5
+  }
+
+[service]
+  name = "fashion-shop-backend"
+  port = 3001
+  envVars = [
+    { name = "NODE_ENV", value = "production" },
+    { name = "PORT", value = "3001" }
+  ]
+
+  [[service.volumes]]
+    name = "data"
+    mountPath = "/app/data"
+
+[[http]]
+  internalPort = 3001
+  handler = "main"
