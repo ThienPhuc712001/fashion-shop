@@ -1,11 +1,16 @@
 import express from 'express';
 const router = express.Router();
+import { authenticate, authorize } from '../middleware/auth';
+import { body, param, query } from 'express-validator';
+
+// Admin controllers
 import {
   getAdminOrders,
   getAdminOrder,
   updateOrderStatus,
   cancelOrder
 } from '../controllers/admin/orders.admin.controller';
+
 import {
   getAdminProducts,
   getAdminProduct,
@@ -15,19 +20,31 @@ import {
   getProductVariants,
   updateVariantStock
 } from '../controllers/admin/products.admin.controller';
+
 import {
   getAdminCustomers,
   getAdminCustomer,
   updateCustomer,
   getCustomerOrders
 } from '../controllers/admin/customers.admin.controller';
+
 import {
   getAdminInventory,
   updateVariantStock as updateInventoryStock,
   bulkUpdateVariantStock
 } from '../controllers/admin/inventory.admin.controller';
-import { authenticate, authorize } from '../middleware/auth';
-import { body, param, query } from 'express-validator';
+
+import {
+  getAdminUsers,
+  getUserById,
+  updateUser,
+  deleteUser
+} from '../controllers/admin/users.admin.controller';
+
+import {
+  getAdminSettings,
+  updateAdminSettings
+} from '../controllers/admin/settings.admin.controller';
 
 // All routes require admin authentication
 router.use(authenticate, authorize('admin'));
@@ -42,19 +59,13 @@ router.get('/orders', [
   query('end_date').optional().isISO8601()
 ], getAdminOrders);
 
-router.get('/orders/:id', [
-  param('id').isString()
-], getAdminOrder);
-
+router.get('/orders/:id', [param('id').isString()], getAdminOrder);
 router.put('/orders/:id/status', [
   param('id').isString(),
   body('status').isString(),
   body('tracking_number').optional().isString()
 ], updateOrderStatus);
-
-router.put('/orders/:id/cancel', [
-  param('id').isString()
-], cancelOrder);
+router.put('/orders/:id/cancel', [param('id').isString()], cancelOrder);
 
 // === PRODUCTS ADMIN ===
 router.get('/products', [
@@ -67,10 +78,7 @@ router.get('/products', [
   query('sortOrder').optional().isIn(['asc', 'desc'])
 ], getAdminProducts);
 
-router.get('/products/:id', [
-  param('id').isString()
-], getAdminProduct);
-
+router.get('/products/:id', [param('id').isString()], getAdminProduct);
 router.post('/products', [
   body('name').isString().notEmpty(),
   body('description').optional().isString(),
@@ -92,14 +100,8 @@ router.put('/products/:id', [
   body('slug').optional().isString()
 ], updateProduct);
 
-router.delete('/products/:id', [
-  param('id').isString()
-], deleteProduct);
-
-router.get('/products/:id/variants', [
-  param('id').isString()
-], getProductVariants);
-
+router.delete('/products/:id', [param('id').isString()], deleteProduct);
+router.get('/products/:id/variants', [param('id').isString()], getProductVariants);
 router.put('/variants/:variant_id/stock', [
   param('variant_id').isString(),
   body('stock_quantity').isInt({ min: 0 }),
@@ -113,10 +115,7 @@ router.get('/customers', [
   query('search').optional().isString()
 ], getAdminCustomers);
 
-router.get('/customers/:id', [
-  param('id').isString()
-], getAdminCustomer);
-
+router.get('/customers/:id', [param('id').isString()], getAdminCustomer);
 router.put('/customers/:id', [
   param('id').isString(),
   body('full_name').optional().isString(),
@@ -129,6 +128,27 @@ router.get('/customers/:id/orders', [
   query('page').optional().isInt({ min: 1 }),
   query('limit').optional().isInt({ min: 1, max: 50 })
 ], getCustomerOrders);
+
+// === USERS ADMIN ===
+router.get('/users', [
+  query('page').optional().isInt({ min: 1 }),
+  query('limit').optional().isInt({ min: 1, max: 100 }),
+  query('search').optional().isString(),
+  query('role').optional().isString(),
+  query('is_active').optional().isBoolean()
+], getAdminUsers);
+
+router.get('/users/:id', [param('id').isString()], getUserById);
+router.put('/users/:id', [
+  param('id').isString(),
+  body('full_name').optional().isString(),
+  body('phone').optional().isString(),
+  body('avatar_url').optional().isURL(),
+  body('is_active').optional().isBoolean(),
+  body('role').optional().isString()
+], updateUser);
+
+router.delete('/users/:id', [param('id').isString()], deleteUser);
 
 // === INVENTORY ADMIN ===
 router.get('/inventory', [
@@ -149,5 +169,13 @@ router.patch('/inventory/bulk-update', [
   body('updates.*.variant_id').isString(),
   body('updates.*.stock_quantity').isInt({ min: 0 })
 ], bulkUpdateVariantStock);
+
+// === SETTINGS ADMIN ===
+router.get('/settings', getAdminSettings);
+router.put('/settings', [
+  body('siteName').optional().isString(),
+  body('supportEmail').optional().isEmail(),
+  body('maintenanceMode').optional().isBoolean()
+], updateAdminSettings);
 
 export default router;

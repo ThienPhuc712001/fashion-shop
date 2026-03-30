@@ -27,6 +27,7 @@ import uploadRoutes from './routes/upload.routes';
 import couponsRoutes from './routes/coupons.routes';
 import dashboardRoutes from './routes/dashboard.routes';
 import shippingRoutes from './routes/shipping.routes';
+import publicRoutes from './routes/public.routes';
 import adminRoutes from './routes/admin.routes';
 import searchRoutes from './routes/search.routes';
 import metricsRoutes from './routes/metrics.routes';
@@ -59,11 +60,9 @@ if (!fs.existsSync(logDir)) {
 // Security
 app.use(helmet());
 
-// CORS - allow both backend and admin UI origins
-const defaultCorsOrigins = ['http://localhost:3000', 'http://localhost:5173'];
-const corsOrigins = (process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : defaultCorsOrigins);
+// CORS - allow all origins (for development/deployment flexibility)
 app.use(cors({
-  origin: corsOrigins,
+  origin: true,
   credentials: true
 }));
 
@@ -107,6 +106,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/coupons', couponsRoutes);
 app.use('/api/admin/dashboard', dashboardRoutes);
 app.use('/api/shipping', shippingRoutes);
+app.use('/api', publicRoutes); // Public pages (no auth required)
 app.use('/api/admin', adminRoutes);
 app.use('/metrics', metricsRoutes);
 
@@ -134,7 +134,12 @@ app.get('/api', (req: Request, res: Response) => {
       shipping: '/api/shipping',
       'admin/orders/export': '/api/admin/orders/export',
       metrics: '/metrics',
-      health: '/health'
+      health: '/health',
+      // Public
+      contact: '/api/contact',
+      about: '/api/about',
+      faq: '/api/faq',
+      careers: '/api/careers'
     }
   });
 });
